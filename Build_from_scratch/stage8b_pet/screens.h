@@ -1,0 +1,433 @@
+// screens.h - every screen + what each button does on it (Stage 8a, + 8b pet events)
+//
+// Home -> MODE -> Setup -> (MODE cycles all 4 presets, one more MODE) -> To-do -> MODE -> Home
+// Setup: OK start, BACK Home.   Focus: OK pause/resume, BACK x2 cancel.   Break: OK pause, BACK x2 skip.
+// To-do: OK tick, BACK next row, MODE Home.   MODE hold = mute, everywhere.
+// Onboarding: OK next, BACK previous (4 pages).   Wi-Fi help: shown when the setup hotspot opens.
+#pragma once
+#include "gfx.h"
+#include "session.h"
+#include "hourglass.h"
+#include "petrules.h"
+
+#define C_NEST 0x8A22
+
+// ---- screen state ----
+uint8_t  obPage = 0;
+uint8_t  setupIdx = 2, setupBrowse = 0;
+String   shownHHMM;
+NetState shownNet = NET_OFF;
+bool     shownMute = false;
+uint16_t shownStreak = 0xFFFF;
+char     shownSpeech[22] = "";
+uint8_t  shownStage = 0xFF;
+// Home idle animation
+const uint8_t SEQ_WOBBLE[] = { 1, 2, 1, 2, 0 };
+const uint8_t SEQ_BLINK[]  = { 1, 0 };
+const uint8_t SEQ_TWITCH[] = { 2, 0 };
+const uint8_t SEQ_SIGN[]   = { 1, 0 };
+const uint8_t* seq = nullptr; uint8_t seqLen = 0, seqPos = 0; uint16_t seqStepMs = 0;
+uint32_t seqNext = 0, nextIdleAt = 0;
+// break + pause visuals
+uint8_t  sleepF = 0; uint32_t sleepNext = 0;
+bool     blinkOn = false; uint32_t blinkNext = 0;
+int      shownBarW = -1;
+// to-do scrolling
+uint8_t  scrollOff = 0; uint32_t scrollNext = 0;
+
+// =================== HOME ===================
+const Sprite* stageSet(uint8_t st) { switch (st) { case 0: return EGG; case 1: return BABY; case 2: return KID; case 3: return TEEN; default: return ADULT; } }
+uint8_t baseFrame(uint8_t st) {
+  if (st == 1 || st == 2) { if (pet.fullness < 30) return 3; if (pet.energy < 30) return 4; }
+  return 0;
+}
+#define C_SICK 0xAD55   // grey tint while Sick
+void drawSpriteStage(const Sprite& s) {
+  drawSprite((128 - s.w) / 2, 30 + (96 - s.h) / 2, s, C_NAVY, (pet.moodFlags & 2) ? C_SICK : C_WHITE);
+}
+void drawPetFrame(uint8_t f) {
+  if (pet.pendingEvent == 1) { drawSpriteStage(EGG[0]); return; }     // hatch not played yet
+  uint8_t st = stageOf(pet.growth);
+  drawSpriteStage(stageSet(st)[f ? f : baseFrame(st)]);
+}
+// hatch (egg cracks open) and stage-up, played when Home is shown
+const uint8_t HATCH_SEQ[] = { 1, 2, 1, 2, 3, 3, 4, 4, 5, 5 };
+uint8_t  evStep = 0; uint32_t evNext = 0;
+void startPendingEvent() {
+  if (pet.pendingEvent == 1) { evStep = 1; evNext = millis(); Serial.println("[ui] hatching!"); return; }
+  uint8_t st = stageOf(pet.growth);
+  pet.pendingEvent = 0; markDirty(DIRTY_PET);
+  fastFill(0, 30, 128, 96, C_NAVY); shownStage = st; drawPetFrame(0);
+  playChime(5);
+  char b[22]; snprintf(b, sizeof(b), "I'm a%s %s now!", st == 4 ? "n" : "", STAGE_NAME[st]); say(b, 10000);
+  Serial.printf("[ui] stage up -> %s\n", STAGE_NAME[st]);
+}
+bool hatchTick() {                                   // true while the hatch is playing
+  if (!evStep) return false;
+  if (millis() < evNext) return true;
+  if (evStep <= sizeof(HATCH_SEQ)) { drawSpriteStage(EGG[HATCH_SEQ[evStep - 1]]); evStep++; evNext = millis() + 260; return true; }
+  evStep = 0; pet.pendingEvent = 0; markDirty(DIRTY_PET);
+  fastFill(0, 30, 128, 96, C_NAVY); shownStage = stageOf(pet.growth); drawPetFrame(0);
+  playChime(4);
+  char b[22]; snprintf(b, sizeof(b), "Hi! I'm %s!", pet.name); say(b, 10000);
+  nextIdleAt = millis() + 4000;
+  return false;
+}
+
+const char* homeSpeech() {
+  static char b[22];
+  if (millis() < speechUntil) return speechMsg;
+  if (stageOf(pet.growth) == 0) return "Focus to hatch me!";
+  if (pet.moodFlags & 2) return "I feel sick...";
+  if (pet.moodFlags & 1) return "I'm worried...";
+  if (pet.fullness < 30) return pet.carrots ? "Hungry! OK = feed" : "I'm hungry";
+  if (pet.energy < 30)   return "I'm sleepy";
+  if (pet.love < 30)     return "Pet me?";
+  if (pet.streakCur >= 2) { snprintf(b, sizeof(b), "Day %u streak!", pet.streakCur); return b; }
+  return "Ready to focus?";
+}
+void drawSpeech(bool force) {
+  const char* s = homeSpeech();
+  if (!force && !strcmp(s, shownSpeech)) return;
+  strlcpy(shownSpeech, s, sizeof(shownSpeech));
+  fastFill(0, 14, 128, 16, C_NAVY);
+  txtC(18, shownSpeech, C_WHITE, C_NAVY);
+}
+
+void iconCarrot(int y) { tft.fillTriangle(2, y + 3, 9, y + 3, 5, y + 9, C_ORANGE); tft.drawLine(5, y, 5, y + 2, C_GREEN); tft.drawLine(4, y + 1, 7, y, C_GREEN); }
+void iconHeart(int y)  { tft.fillCircle(4, y + 3, 2, C_RED); tft.fillCircle(8, y + 3, 2, C_RED); tft.fillTriangle(2, y + 4, 10, y + 4, 6, y + 9, C_RED); }
+void iconBolt(int y)   { tft.fillTriangle(8, y, 3, y + 5, 6, y + 5, C_YELLOW); tft.fillTriangle(5, y + 4, 9, y + 4, 4, y + 9, C_YELLOW); }
+void drawBar(int y, uint8_t v, uint8_t icon) {
+  if (v > 100) v = 100;
+  fastFill(0, y, 16, 10, C_NAVY);
+  if (icon == 0) iconCarrot(y); else if (icon == 1) iconHeart(y); else iconBolt(y);
+  int w = 96 * v / 100;
+  uint16_t c = v > 60 ? C_GREEN : v >= 30 ? C_AMBER : C_RED;
+  fastFill(16, y + 1, w, 8, c); fastFill(16 + w, y + 1, 96 - w, 8, C_BARBG);
+}
+void drawBars() {
+  drawBar(127, pet.fullness, 0); drawBar(138, pet.love, 1); drawBar(149, pet.energy, 2);
+  fastFill(112, 127, 16, 33, C_NAVY);
+  char c[4]; snprintf(c, sizeof(c), "x%u", pet.carrots); txt(115, 128, c, C_ORANGE, C_NAVY);   // carrots held
+  if (pet.shield) { tft.drawRect(117, 140, 7, 8, C_GREEN); tft.drawLine(120, 142, 120, 145, C_GREEN); }   // shield held
+}
+
+void drawHome() {
+  fastFill(0, 14, 128, 146, C_NAVY);
+  drawTopBar(); drawSpeech(true);
+  shownStage = stageOf(pet.growth); drawPetFrame(0); drawBars();
+  seq = nullptr; evStep = 0; nextIdleAt = millis() + random(3000, 8000);
+  uiPet = false;
+  if (pet.pendingEvent) startPendingEvent();
+}
+
+const uint8_t SEQ_FEED_S[] = { 5, 0 };   // baby/kid feed frame
+const uint8_t SEQ_FEED_B[] = { 2, 0 };   // teen/adult feed frame
+void homeFeed() {
+  if (evStep || !petFeed()) return;
+  uint8_t st = stageOf(pet.growth);
+  seq = st <= 2 ? SEQ_FEED_S : SEQ_FEED_B; seqLen = 2; seqStepMs = 1300; seqPos = 0; seqNext = millis();
+}
+
+void homeTick() {
+  uint32_t now = millis();
+  if (hatchTick()) { if (uiPet) { uiPet = false; drawBars(); drawSpeech(false); } return; }
+  if (pet.pendingEvent && !seq) { startPendingEvent(); return; }
+  if (uiPet) {
+    uiPet = false;
+    uint8_t st = stageOf(pet.growth);
+    if (st != shownStage) { shownStage = st; fastFill(0, 30, 128, 96, C_NAVY); seq = nullptr; }
+    if (!seq) drawPetFrame(0);
+    drawBars(); drawSpeech(false);
+  }
+  if (!seq && now >= nextIdleAt) {                 // start an idle move every 3-8 s
+    uint8_t st = stageOf(pet.growth);
+    if (st == 0)      { seq = SEQ_WOBBLE; seqLen = sizeof(SEQ_WOBBLE); seqStepMs = 160; }
+    else if (st <= 2) { bool b = random(2); seq = b ? SEQ_BLINK : SEQ_TWITCH; seqLen = 2; seqStepMs = b ? 150 : 300; }
+    else              { seq = SEQ_SIGN; seqLen = 2; seqStepMs = 700; }
+    seqPos = 0; seqNext = now;
+  }
+  if (seq && now >= seqNext) {
+    drawPetFrame(seq[seqPos]); seqNext = now + seqStepMs;
+    if (++seqPos >= seqLen) { seq = nullptr; nextIdleAt = now + random(3000, 8000); }
+  }
+}
+
+// =================== SETUP ===================
+void drawSetupPreset() {
+  uint8_t m = presetMin(setupIdx);
+  fastFill(0, 30, 128, 60, C_NAVY);
+  char n[4]; snprintf(n, sizeof(n), "%u", m);
+  int len = strlen(n), x0 = (128 - (len * 24 + 48)) / 2;
+  txt(x0, 34, n, C_AMBER, C_NAVY, 4);
+  txt(x0 + len * 24, 48, " min", C_WHITE, C_NAVY, 2);
+  char b[24];
+  if (m < 25) strcpy(b, "Test - no break");
+  else snprintf(b, sizeof(b), "Then %u min break", breakAfter(m));
+  txtC(76, b, C_DIM, C_NAVY);
+}
+void drawSetup() {
+  fastFill(0, 14, 128, 146, C_NAVY);
+  drawTopBar();
+  txtC(19, "POMODORO", C_AMBER, C_NAVY);
+  drawSetupPreset();
+  drawDots(64, 98, settings.cycleDots, 5, C_NAVY);
+  char b[24]; snprintf(b, sizeof(b), "Today: %u session%s", settings.todayCount, settings.todayCount == 1 ? "" : "s");
+  txtC(114, b, C_WHITE, C_NAVY);
+  fastFill(0, 138, 128, 22, C_GREY);
+  txt(2, 141, "MODE next  OK start", C_WHITE, C_GREY);
+  txt(2, 151, "BACK home", C_WHITE, C_GREY);
+}
+void openSetup() { setupIdx = settings.lastPreset & 3; setupBrowse = 0; goScreen(SC_SETUP); }
+
+// =================== FOCUS ===================
+void drawFocusHeader() {
+  fastFill(0, 0, 86, 13, C_BLACK);
+  char b[16];
+  if (confirmShown) txt(2, 3, "BACK=cancel?", C_RED, C_BLACK);
+  else if (!timer.running && blinkOn) txt(2, 3, "PAUSED", C_WHITE, C_BLACK);
+  else { snprintf(b, sizeof(b), "FOCUS %um%s", presetMin(settings.lastPreset), fastMode ? " F" : ""); txt(2, 3, b, C_AMBER, C_BLACK); }
+  drawDots(106, 6, settings.cycleDots, 3, C_BLACK);
+}
+void drawFocus() {
+  fastFill(0, 0, 128, 160, C_BLACK);
+  streamDrawnTo = -1; blinkOn = false;
+  drawFocusHeader(); drawGlassOutline(); updateSand(true);
+  drawTime(34, 143, timer.remaining(), C_BLACK, true);
+}
+void focusTick() {
+  if (uiHeader) { uiHeader = false; drawFocusHeader(); }
+  if (timer.running) { updateSand(false); drawTime(34, 143, timer.remaining(), C_BLACK, false); }
+  else if (millis() >= blinkNext) { blinkNext = millis() + 500; blinkOn = !blinkOn; drawFocusHeader(); }
+  animateStream();
+}
+
+// =================== BREAK ===================
+void drawBreakHeader() {
+  fastFill(0, 0, 86, 13, C_BLACK);
+  char b[16];
+  if (confirmShown) txt(2, 3, "BACK=skip?", C_RED, C_BLACK);
+  else if (breakWaiting()) txt(2, 3, "BREAK READY", C_GREEN, C_BLACK);
+  else if (!timer.running && blinkOn) txt(2, 3, "PAUSED", C_WHITE, C_BLACK);
+  else { if (longBreak) strcpy(b, "LONG BREAK"); else snprintf(b, sizeof(b), "BREAK %um", breakMins); txt(2, 3, b, C_GREEN, C_BLACK); }
+  drawDots(106, 6, settings.cycleDots, 3, C_BLACK);
+  fastFill(0, 148, 128, 12, C_BLACK);
+  txtC(150, breakWaiting() ? "OK = start break" : timer.running ? "OK pause  BACKx2 skip" : "OK = resume", C_DIM, C_BLACK);
+}
+void drawBreakBar(bool force) {
+  uint32_t dur = timer.durationMs ? timer.durationMs : 1;
+  int w = (int)((uint64_t)124 * timer.remaining() / dur);
+  if (!force && w == shownBarW) return;
+  shownBarW = w;
+  fastFill(2, 118, w, 5, C_GREEN); fastFill(2 + w, 118, 124 - w, 5, C_BARBG);
+}
+void drawBreak() {
+  fastFill(0, 0, 128, 160, C_BLACK);
+  blinkOn = false; sleepF = 0; sleepNext = millis() + 2000;
+  drawBreakHeader();
+  drawSprite(0, 15, SLEEP[0], C_BLACK);
+  drawBreakBar(true);
+  drawTime(34, 128, timer.remaining(), C_BLACK, true);
+}
+void breakTick() {
+  uint32_t now = millis();
+  if (uiHeader) { uiHeader = false; drawBreakHeader(); }
+  if (timer.running) {
+    drawBreakBar(false); drawTime(34, 128, timer.remaining(), C_BLACK, false);
+    if (now >= sleepNext) { sleepNext = now + 2000; sleepF ^= 1; drawSprite(0, 15, SLEEP[sleepF], C_BLACK); }
+  } else if (!breakWaiting() && now >= blinkNext) { blinkNext = now + 500; blinkOn = !blinkOn; drawBreakHeader(); }
+}
+
+// =================== TO-DO ===================
+void drawTodoText(uint8_t r) {
+  int y = 14 + r * 18;
+  bool sel = r == todoSel;
+  uint16_t bg = sel ? C_SEL : C_NAVY;
+  const TodoItem& it = todos.item[r];
+  fastFill(20, y, 108, 18, bg);
+  char line[19]; size_t n = strlen(it.text), off = sel ? scrollOff : 0;
+  if (off > n) off = 0;
+  strlcpy(line, it.text + off, sizeof(line));
+  if (!sel && n > 18) line[17] = '~';
+  txt(20, y + 5, line, it.done ? C_DONE : C_WHITE, bg);
+}
+void drawTodoRow(uint8_t r) {
+  int y = 14 + r * 18;
+  bool sel = (r == todoSel && r < todos.count);
+  uint16_t bg = sel ? C_SEL : C_NAVY;
+  fastFill(0, y, 20, 18, bg);
+  if (r >= todos.count) { fastFill(20, y, 108, 18, C_NAVY); return; }
+  if (sel) txt(1, y + 5, ">", C_AMBER, bg);
+  tft.drawRect(8, y + 5, 8, 8, todos.item[r].done ? C_DONE : C_WHITE);
+  if (todos.item[r].done) tft.fillRect(10, y + 7, 4, 4, C_GREEN);
+  drawTodoText(r);
+}
+void drawTodo() {
+  uint8_t done = 0;
+  for (uint8_t i = 0; i < todos.count; i++) done += todos.item[i].done ? 1 : 0;
+  fastFill(0, 0, 128, 14, C_GREY);
+  txt(2, 3, "TO-DO", C_WHITE, C_GREY);
+  char b[14]; snprintf(b, sizeof(b), "%u/%u done", done, todos.count);
+  txt(126 - strlen(b) * 6, 3, b, C_WHITE, C_GREY);
+  for (uint8_t r = 0; r < 7; r++) drawTodoRow(r);
+  if (!todos.count) {
+    txt(4, 40, "No tasks.", C_WHITE, C_NAVY);
+    txt(4, 58, "Add them at", C_WHITE, C_NAVY);
+    if (netState == NET_ONLINE) { String u = "http://" + WiFi.localIP().toString(); txt(4, 72, u.c_str(), C_AMBER, C_NAVY); }
+    else txt(4, 72, "the web page", C_AMBER, C_NAVY);
+  }
+  fastFill(0, 140, 128, 20, C_GREY);
+  txt(2, 142, "OK tick  BACK down", C_WHITE, C_GREY);
+  txt(2, 151, "MODE home", C_WHITE, C_GREY);
+  scrollOff = 0; scrollNext = millis() + 1200;
+}
+void todoTick() {
+  if (uiTodo) { uiTodo = false; drawTodo(); return; }
+  if (!todos.count || millis() < scrollNext) return;
+  size_t n = strlen(todos.item[todoSel].text);
+  if (n <= 18) return;
+  if (scrollOff >= n - 18) { scrollOff = 0; scrollNext = millis() + 1200; }        // back to start, pause
+  else { scrollOff++; scrollNext = millis() + (scrollOff >= n - 18 ? 1200 : 280); }  // pause at the end
+  drawTodoText(todoSel);
+}
+
+// =================== WI-FI HELP (setup hotspot is on) ===================
+void drawWifiHelp() {
+  fastFill(0, 0, 128, 160, C_NAVY);
+  fastFill(0, 0, 128, 14, C_AMBER);
+  txt(2, 3, "WI-FI SETUP", C_BLACK, C_AMBER);
+  static const char* const L[] = { "1. On your phone open", "   Wi-Fi settings", "2. Join (no password)", "*  Pomodoro-Setup",
+                                   "3. Page opens itself", "*  or 192.168.4.1", "4. Pick your Wi-Fi /", "   hotspot + password" };
+  for (uint8_t i = 0; i < 8; i++) { bool hi = L[i][0] == '*'; txt(2, 22 + i * 13, hi ? L[i] + 1 : L[i], hi ? C_AMBER : C_WHITE, C_NAVY); }
+  fastFill(0, 140, 128, 20, C_GREY);
+  txt(2, 146, "Any button = Home", C_WHITE, C_GREY);
+}
+
+// =================== ONBOARDING ===================
+void drawOnboard() {
+  fastFill(0, 0, 128, 160, C_NAVY);
+  static const char* const TITLE[] = { "Welcome!", "Buttons", "Rewards", "Wi-Fi" };
+  txtC(8, TITLE[obPage], C_AMBER, C_NAVY, 2);
+  if (obPage == 0) {
+    tft.fillRoundRect(36, 82, 56, 10, 5, C_NEST);
+    drawSprite(51, 36, EGG[0], C_NAVY);
+    txtC(104, "Focus to grow", C_WHITE, C_NAVY);
+    txtC(116, "your rabbit.", C_WHITE, C_NAVY);
+  } else if (obPage == 1) {
+    static const char* const L[] = { "OK   = select/start", "MODE = next screen", "MODE hold = mute", "BACK = back", "BACK x2 = cancel" };
+    for (uint8_t i = 0; i < 5; i++) txt(4, 36 + i * 18, L[i], C_WHITE, C_NAVY);
+  } else if (obPage == 2) {
+    static const char* const L[] = { "25/50 min focus", "  = food + growth", "Full break", "  = energy", "Cancel / skip", "  = sad rabbit" };
+    for (uint8_t i = 0; i < 6; i++) txt(4, 34 + i * 16, L[i], i % 2 ? C_AMBER : C_WHITE, C_NAVY);
+  } else {
+    if (netState == NET_ONLINE) {
+      txt(4, 36, "Connected to", C_WHITE, C_NAVY);
+      char s[22]; strlcpy(s, wifiCfg.ssid, sizeof(s)); txt(4, 50, s, C_AMBER, C_NAVY);
+      txt(4, 74, "Edit to-dos at", C_WHITE, C_NAVY);
+      String u = "http://" + WiFi.localIP().toString(); txt(4, 88, u.c_str(), C_AMBER, C_NAVY);
+    } else if (netState == NET_PORTAL) {
+      txt(4, 36, "On your phone join", C_WHITE, C_NAVY);
+      txt(4, 50, "Pomodoro-Setup", C_AMBER, C_NAVY);
+      txt(4, 64, "then open", C_WHITE, C_NAVY);
+      txt(4, 78, "192.168.4.1", C_AMBER, C_NAVY);
+      txt(4, 98, "(or skip: OK)", C_DIM, C_NAVY);
+    } else {
+      txt(4, 36, "Connecting...", C_WHITE, C_NAVY);
+      char s[22]; strlcpy(s, wifiCfg.ssid, sizeof(s)); txt(4, 50, s, C_AMBER, C_NAVY);
+    }
+  }
+  fastFill(0, 140, 128, 20, C_GREY);
+  if (obPage) txt(2, 146, "BACK", C_WHITE, C_GREY);
+  char p[6]; snprintf(p, sizeof(p), "%u/4", obPage + 1); txtC(146, p, C_DIM, C_GREY);
+  const char* r = obPage < 3 ? "OK next" : "OK start";
+  txt(126 - strlen(r) * 6, 146, r, C_WHITE, C_GREY);
+}
+void finishOnboarding() {
+  settings.onboarded = 1; markDirty(DIRTY_SET);
+  goScreen(SC_HOME);
+  Serial.println("[ui] onboarding done -> Home");
+}
+
+// =================== dispatch ===================
+void drawFull() {
+  switch (scr) {
+    case SC_ONBOARD: drawOnboard(); break;
+    case SC_HOME:    drawHome(); break;
+    case SC_SETUP:   drawSetup(); break;
+    case SC_FOCUS:   drawFocus(); break;
+    case SC_BREAK:   drawBreak(); break;
+    case SC_TODO:    uiTodo = false; drawTodo(); break;
+    case SC_WIFI:    drawWifiHelp(); break;
+  }
+}
+
+void screenTick() {
+  static uint32_t chk = 0;
+  uint32_t now = millis();
+  if (now - chk >= 250) {
+    chk = now;
+    String hm = clockHHMM();
+    bool netChanged = netState != shownNet;
+    bool topCh = hm != shownHHMM || netChanged || muted != shownMute || pet.streakCur != shownStreak;
+    shownHHMM = hm; shownNet = netState; shownMute = muted; shownStreak = pet.streakCur;
+    if (netChanged) {
+      if (netState == NET_PORTAL && !sessionActive() && scr != SC_ONBOARD) goScreen(SC_WIFI);
+      else if (scr == SC_WIFI && netState != NET_PORTAL) goScreen(SC_HOME);
+      else if (scr == SC_ONBOARD && obPage == 3) uiFull = true;
+      else if (scr == SC_TODO && !todos.count) uiTodo = true;
+    }
+    if (topCh && !uiFull && (scr == SC_HOME || scr == SC_SETUP)) drawTopBar();
+    if (scr == SC_HOME && !uiFull) drawSpeech(false);
+  }
+  if (uiFull) { uiFull = false; uiHeader = false; drawFull(); return; }
+  switch (scr) {
+    case SC_HOME:  homeTick(); break;
+    case SC_FOCUS: focusTick(); break;
+    case SC_BREAK: breakTick(); break;
+    case SC_TODO:  todoTick(); break;
+    default: break;
+  }
+}
+
+void uiEvent(const Event& e) {
+  if (e.type == EV_LONG && e.btn == B_MODE) { setMuted(!muted); Serial.printf("[btn] mute %s\n", muted ? "ON" : "OFF"); return; }
+  bool sh = e.type == EV_SHORT, dbl = e.type == EV_DOUBLE, to = e.type == EV_CONFIRM_TIMEOUT;
+  switch (scr) {
+    case SC_ONBOARD:
+      if (sh && e.btn == B_OK) { if (obPage < 3) { obPage++; uiFull = true; } else finishOnboarding(); }
+      else if ((sh || dbl) && e.btn == B_BACK && obPage > 0) { obPage--; uiFull = true; }
+      break;
+    case SC_WIFI: if (sh) goScreen(SC_HOME); break;
+    case SC_HOME:
+      if (sh && e.btn == B_MODE) openSetup();
+      else if (sh && e.btn == B_OK) homeFeed();                       // 8c: becomes the care menu
+      break;
+    case SC_SETUP:
+      if (!sh) break;
+      if (e.btn == B_MODE) {
+        if (++setupBrowse >= 4) goScreen(SC_TODO);                    // saw all 4 presets -> next screen
+        else { setupIdx = (setupIdx + 1) & 3; drawSetupPreset(); }
+      } else if (e.btn == B_OK) focusStart(setupIdx);
+      else if (e.btn == B_BACK) goScreen(SC_HOME);
+      break;
+    case SC_TODO:
+      if (sh && e.btn == B_MODE) goScreen(SC_HOME);
+      else if (sh && e.btn == B_OK && todos.count) {
+        todos.item[todoSel].done ^= 1; markDirty(DIRTY_TODO);
+        Serial.printf("[btn] tick %u -> %s\n", todoSel + 1, todos.item[todoSel].done ? "done" : "open");
+      } else if ((sh || dbl) && e.btn == B_BACK && todos.count) { todoSel = (todoSel + 1) % todos.count; uiTodo = true; }
+      break;
+    case SC_FOCUS:
+      if (sh && e.btn == B_OK) { confirmShown = false; focusPauseToggle(); }
+      else if (sh && e.btn == B_BACK) { confirmShown = true; uiHeader = true; }
+      else if (dbl && e.btn == B_BACK) focusCancel();
+      else if (to && confirmShown) { confirmShown = false; uiHeader = true; }
+      break;
+    case SC_BREAK:
+      if (sh && e.btn == B_OK) { confirmShown = false; breakPauseToggle(); }
+      else if (sh && e.btn == B_BACK) { confirmShown = true; uiHeader = true; }
+      else if (dbl && e.btn == B_BACK) breakSkip();
+      else if (to && confirmShown) { confirmShown = false; uiHeader = true; }
+      break;
+  }
+}

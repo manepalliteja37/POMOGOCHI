@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+
+# Arduino / editor build output
+build/
+.vscode/
+*.bin
+*.elf
+
+# release zips (upload them to GitHub Releases instead)
+*.zip
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini

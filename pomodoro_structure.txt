@@ -1,0 +1,528 @@
+.pomodoro
+|   .gitignore
+|   build_guide_v1.md
+|   build_guide_v2.md
+|   LICENSE
+|   pomodoro_hardware.md
+|   pomodoro_structure.txt
+|   README.md
+|   software_requiremnets_flow.md
+|   
++---archive
+|   +---pomodoro_rabbit_v1
+|   |       appdata.h
+|   |       buzzer.h
+|   |       clock.h
+|   |       gfx.h
+|   |       hourglass.h
+|   |       input.h
+|   |       LICENSE_bunny_art.txt
+|   |       netsetup.h
+|   |       petrules.h
+|   |       pet_frames.h
+|   |       pomodoro_rabbit_v1.ino
+|   |       screens.h
+|   |       session.h
+|   |       storage.h
+|   |       webui.h
+|   |       
+|   +---pomodoro_rabbit_v1.1
+|   |   |   README.md
+|   |   |   
+|   |   +---pomodoro_rabbit_v1.1
+|   |   |       appdata.h
+|   |   |       buzzer.h
+|   |   |       clock.h
+|   |   |       gfx.h
+|   |   |       hourglass.h
+|   |   |       input.h
+|   |   |       LICENSE_bunny_art.txt
+|   |   |       netsetup.h
+|   |   |       petrules.h
+|   |   |       pet_frames.h
+|   |   |       pomodoro_rabbit_v1.1.ino
+|   |   |       screens.h
+|   |   |       session.h
+|   |   |       storage.h
+|   |   |       webui.h
+|   |   |       
+|   |   \---tools
+|   |           gen_frames.py
+|   |           
+|   +---pomodoro_rabbit_v1.10
+|   |   |   README.md
+|   |   |   
+|   |   +---docs
+|   |   |   |   petrules.md
+|   |   |   |   setup.md
+|   |   |   |   webrules.md
+|   |   |   |   
+|   |   |   \---media
+|   |   |           care.gif
+|   |   |           hatch.gif
+|   |   |           idle.gif
+|   |   |           moods.gif
+|   |   |           play.gif
+|   |   |           sleep.gif
+|   |   |           stages.gif
+|   |   |           wiring.png
+|   |   |           
+|   |   +---pomodoro_rabbit_v1.10
+|   |   |       appdata.h
+|   |   |       buzzer.h
+|   |   |       clock.h
+|   |   |       gfx.h
+|   |   |       history.h
+|   |   |       hourglass.h
+|   |   |       input.h
+|   |   |       LICENSE_bunny_art.txt
+|   |   |       mood_frames.h
+|   |   |       netsetup.h
+|   |   |       ntfy.h
+|   |   |       petrules.h
+|   |   |       pet_frames.h
+|   |   |       pomodoro_rabbit_v1.10.ino
+|   |   |       screens.h
+|   |   |       session.h
+|   |   |       storage.h
+|   |   |       webui.h
+|   |   |       
+|   |   \---tools
+|   |       |   gen_frames.py
+|   |       |   gen_mood_frames.py
+|   |       |   make_doc_media.py
+|   |       |   make_wiring.py
+|   |       |   
+|   |       \---mood_art
+|   |               adult_active_happy.png
+|   |               adult_active_hungry.png
+|   |               adult_active_love.png
+|   |               child_idle_happy.png
+|   |               child_idle_look_around.png
+|   |               child_idle_love.png
+|   |               idle_happy.png
+|   |               idle_love.png
+|   |               youth_active_happy.png
+|   |               youth_active_hungry.png
+|   |               youth_active_love.png
+|   |               
+|   +---pomodoro_rabbit_v1.2
+|   |   |   README.md
+|   |   |   
+|   |   +---pomodoro_rabbit_v1.2
+|   |   |       appdata.h
+|   |   |       buzzer.h
+|   |   |       clock.h
+|   |   |       gfx.h
+|   |   |       hourglass.h
+|   |   |       input.h
+|   |   |       LICENSE_bunny_art.txt
+|   |   |       netsetup.h
+|   |   |       petrules.h
+|   |   |       pet_frames.h
+|   |   |       pomodoro_rabbit_v1.2.ino
+|   |   |       screens.h
+|   |   |       session.h
+|   |   |       storage.h
+|   |   |       webui.h
+|   |   |       
+|   |   \---tools
+|   |           gen_frames.py
+|   |           
+|   +---pomodoro_rabbit_v1.3
+|   |   |   README.md
+|   |   |   
+|   |   +---pomodoro_rabbit_v1.3
+|   |   |       appdata.h
+|   |   |       buzzer.h
+|   |   |       clock.h
+|   |   |       gfx.h
+|   |   |       history.h
+|   |   |       hourglass.h
+|   |   |       input.h
+|   |   |       LICENSE_bunny_art.txt
+|   |   |       netsetup.h
+|   |   |       petrules.h
+|   |   |       pet_frames.h
+|   |   |       pomodoro_rabbit_v1.3.ino
+|   |   |       screens.h
+|   |   |       session.h
+|   |   |       storage.h
+|   |   |       webui.h
+|   |   |       
+|   |   \---tools
+|   |           gen_frames.py
+|   |           
+|   +---pomodoro_rabbit_v1.4
+|   |   |   README.md
+|   |   |   
+|   |   +---pomodoro_rabbit_v1.4
+|   |   |       appdata.h
+|   |   |       buzzer.h
+|   |   |       clock.h
+|   |   |       gfx.h
+|   |   |       history.h
+|   |   |       hourglass.h
+|   |   |       input.h
+|   |   |       LICENSE_bunny_art.txt
+|   |   |       netsetup.h
+|   |   |       petrules.h
+|   |   |       pet_frames.h
+|   |   |       pomodoro_rabbit_v1.4.ino
+|   |   |       screens.h
+|   |   |       session.h
+|   |   |       storage.h
+|   |   |       webui.h
+|   |   |       
+|   |   \---tools
+|   |           gen_frames.py
+|   |           
+|   +---pomodoro_rabbit_v1.5
+|   |   |   README.md
+|   |   |   
+|   |   +---pomodoro_rabbit_v1.5
+|   |   |       appdata.h
+|   |   |       buzzer.h
+|   |   |       clock.h
+|   |   |       gfx.h
+|   |   |       history.h
+|   |   |       hourglass.h
+|   |   |       input.h
+|   |   |       LICENSE_bunny_art.txt
+|   |   |       netsetup.h
+|   |   |       petrules.h
+|   |   |       pet_frames.h
+|   |   |       pomodoro_rabbit_v1.5.ino
+|   |   |       screens.h
+|   |   |       session.h
+|   |   |       storage.h
+|   |   |       webui.h
+|   |   |       
+|   |   \---tools
+|   |           gen_frames.py
+|   |           
+|   +---pomodoro_rabbit_v1.6
+|   |   |   README.md
+|   |   |   
+|   |   +---pomodoro_rabbit_v1.6
+|   |   |       appdata.h
+|   |   |       buzzer.h
+|   |   |       clock.h
+|   |   |       gfx.h
+|   |   |       history.h
+|   |   |       hourglass.h
+|   |   |       input.h
+|   |   |       LICENSE_bunny_art.txt
+|   |   |       netsetup.h
+|   |   |       petrules.h
+|   |   |       pet_frames.h
+|   |   |       pomodoro_rabbit_v1.6.ino
+|   |   |       screens.h
+|   |   |       session.h
+|   |   |       storage.h
+|   |   |       webui.h
+|   |   |       
+|   |   \---tools
+|   |           gen_frames.py
+|   |           
+|   +---pomodoro_rabbit_v1.7
+|   |   |   README.md
+|   |   |   
+|   |   +---docs
+|   |   |   \---media
+|   |   +---pomodoro_rabbit_v1.7
+|   |   |       appdata.h
+|   |   |       buzzer.h
+|   |   |       clock.h
+|   |   |       gfx.h
+|   |   |       history.h
+|   |   |       hourglass.h
+|   |   |       input.h
+|   |   |       LICENSE_bunny_art.txt
+|   |   |       netsetup.h
+|   |   |       petrules.h
+|   |   |       pet_frames.h
+|   |   |       pomodoro_rabbit_v1.7.ino
+|   |   |       screens.h
+|   |   |       session.h
+|   |   |       storage.h
+|   |   |       webui.h
+|   |   |       
+|   |   \---tools
+|   +---pomodoro_rabbit_v1.8
+|   |   |   README.md
+|   |   |   
+|   |   +---docs
+|   |   |   |   petrules.md
+|   |   |   |   setup.md
+|   |   |   |   webrules.md
+|   |   |   |   
+|   |   |   \---media
+|   |   |           care.gif
+|   |   |           hatch.gif
+|   |   |           idle.gif
+|   |   |           moods.gif
+|   |   |           play.gif
+|   |   |           sleep.gif
+|   |   |           stages.gif
+|   |   |           wiring.png
+|   |   |           
+|   |   +---pomodoro_rabbit_v1.8
+|   |   |       appdata.h
+|   |   |       buzzer.h
+|   |   |       clock.h
+|   |   |       gfx.h
+|   |   |       history.h
+|   |   |       hourglass.h
+|   |   |       input.h
+|   |   |       LICENSE_bunny_art.txt
+|   |   |       netsetup.h
+|   |   |       petrules.h
+|   |   |       pet_frames.h
+|   |   |       pomodoro_rabbit_v1.8.ino
+|   |   |       screens.h
+|   |   |       session.h
+|   |   |       storage.h
+|   |   |       webui.h
+|   |   |       
+|   |   \---tools
+|   |           gen_frames.py
+|   |           make_doc_media.py
+|   |           make_wiring.py
+|   |           
+|   \---pomodoro_rabbit_v1.9
+|       |   README.md
+|       |   
+|       +---docs
+|       |   |   petrules.md
+|       |   |   setup.md
+|       |   |   webrules.md
+|       |   |   
+|       |   \---media
+|       |           care.gif
+|       |           hatch.gif
+|       |           idle.gif
+|       |           moods.gif
+|       |           play.gif
+|       |           sleep.gif
+|       |           stages.gif
+|       |           wiring.png
+|       |           
+|       +---pomodoro_rabbit_v1.9
+|       |       appdata.h
+|       |       buzzer.h
+|       |       clock.h
+|       |       gfx.h
+|       |       history.h
+|       |       hourglass.h
+|       |       input.h
+|       |       LICENSE_bunny_art.txt
+|       |       mood_frames.h
+|       |       netsetup.h
+|       |       petrules.h
+|       |       pet_frames.h
+|       |       pomodoro_rabbit_v1.9.ino
+|       |       screens.h
+|       |       session.h
+|       |       storage.h
+|       |       webui.h
+|       |       
+|       \---tools
+|           |   gen_frames.py
+|           |   gen_mood_frames.py
+|           |   make_doc_media.py
+|           |   make_wiring.py
+|           |   
+|           \---mood_art
+|                   adult_active_happy.png
+|                   adult_active_hungry.png
+|                   adult_active_love.png
+|                   child_idle_happy.png
+|                   child_idle_look_around.png
+|                   child_idle_love.png
+|                   idle_happy.png
+|                   idle_love.png
+|                   youth_active_happy.png
+|                   youth_active_hungry.png
+|                   youth_active_love.png
+|                   
++---Build_from_scratch
+|   +---hour_glass_timer
+|   |       hour_glass_timer.ino
+|   |       
+|   +---simple_timer
+|   |       simple_timer.ino
+|   |       
+|   +---stage3b_fastdraw
+|   |       LICENSE_bunny_art.txt
+|   |       pet_frames.h
+|   |       stage3b_fastdraw.ino
+|   |       
+|   +---stage3_bitmaps
+|   |   |   gen_frames.py
+|   |   |   
+|   |   \---stage3_bitmaps
+|   |           LICENSE_bunny_art.txt
+|   |           pet_frames.h
+|   |           stage3_bitmaps.ino
+|   |           
+|   +---stage4_buttons
+|   |   \---stage4_buttons
+|   |           LICENSE_bunny_art.txt
+|   |           pet_frames.h
+|   |           stage4_buttons.ino
+|   |           
+|   +---stage5a_buzzer_only
+|   |       stage5a_buzzer_only.ino
+|   |       
+|   +---stage5b_focus_sounds
+|   |       stage5b_focus_sounds.ino
+|   |       
+|   +---stage5c_ambient
+|   |       stage5c_ambient.ino
+|   |       
+|   +---stage5_buzzer
+|   |       buzzer.h
+|   |       LICENSE_bunny_art.txt
+|   |       pet_frames.h
+|   |       stage5_buzzer.ino
+|   |       
+|   +---stage6a_storage
+|   |       stage6a_storage.ino
+|   |       storage.h
+|   |       
+|   +---stage6b_wifi_time
+|   |       clock.h
+|   |       netsetup.h
+|   |       stage6b_wifi_time.ino
+|   |       storage.h
+|   |       
+|   +---stage7_web
+|   |       appdata.h
+|   |       buzzer.h
+|   |       clock.h
+|   |       input.h
+|   |       netsetup.h
+|   |       screen.h
+|   |       stage7_web.ino
+|   |       storage.h
+|   |       webui.h
+|   |       
+|   +---stage8a_screens
+|   |       appdata.h
+|   |       buzzer.h
+|   |       clock.h
+|   |       gfx.h
+|   |       hourglass.h
+|   |       input.h
+|   |       LICENSE_bunny_art.txt
+|   |       netsetup.h
+|   |       petrules.h
+|   |       pet_frames.h
+|   |       screens.h
+|   |       session.h
+|   |       stage8a_screens.ino
+|   |       storage.h
+|   |       webui.h
+|   |       
+|   +---stage8b_pet
+|   |       appdata.h
+|   |       buzzer.h
+|   |       clock.h
+|   |       gfx.h
+|   |       hourglass.h
+|   |       input.h
+|   |       LICENSE_bunny_art.txt
+|   |       netsetup.h
+|   |       petrules.h
+|   |       pet_frames.h
+|   |       screens.h
+|   |       session.h
+|   |       stage8b_pet.ino
+|   |       storage.h
+|   |       webui.h
+|   |       
+|   +---stage8c_care
+|   |       appdata.h
+|   |       buzzer.h
+|   |       clock.h
+|   |       gfx.h
+|   |       hourglass.h
+|   |       input.h
+|   |       LICENSE_bunny_art.txt
+|   |       netsetup.h
+|   |       petrules.h
+|   |       pet_frames.h
+|   |       screens.h
+|   |       session.h
+|   |       stage8c_care.ino
+|   |       storage.h
+|   |       webui.h
+|   |       
+|   \---tft_screen_test
+|           tft_screen_test.ino
+|           
++---docs
+|       petrules.md
+|       setup.md
+|       webrules.md
+|       
++---images
+|   |   frames_preview.png
+|   |   mood_frames_preview.png
+|   |   shop_preview.png
+|   |   
+|   +---media
+|   |       care.gif
+|   |       hatch.gif
+|   |       idle.gif
+|   |       moods.gif
+|   |       play.gif
+|   |       shop.png
+|   |       sleep.gif
+|   |       stages.gif
+|   |       wiring.png
+|   |       
+|   \---mood_art
+|           adult_active_happy.png
+|           adult_active_hungry.png
+|           adult_active_love.png
+|           child_idle_happy.png
+|           child_idle_look_around.png
+|           child_idle_love.png
+|           idle_happy.png
+|           idle_love.png
+|           youth_active_happy.png
+|           youth_active_hungry.png
+|           youth_active_love.png
+|           
++---pomodoro_rabbit_v2
+|       appdata.h
+|       buzzer.h
+|       clock.h
+|       gfx.h
+|       history.h
+|       hourglass.h
+|       input.h
+|       LICENSE_bunny_art.txt
+|       mood_frames.h
+|       netsetup.h
+|       ntfy.h
+|       petrules.h
+|       pet_frames.h
+|       pomodoro_rabbit_v2.ino
+|       README.md
+|       screens.h
+|       session.h
+|       shop_art.h
+|       storage.h
+|       webui.h
+|       
+\---tools
+        gen_frames.py
+        gen_mood_frames.py
+        gen_shop_art.py
+        make_doc_media.py
+        make_wiring.py
+        shop_art_src.py
+        
