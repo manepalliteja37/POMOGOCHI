@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pomogochi · Pomodoro Rabbit</title>
+<meta name="description" content="A desk Pomodoro timer with a virtual rabbit pet. ESP8266 + 1.8 inch ST7735 TFT + 3 buttons + buzzer. Focus to grow your bunny from egg to adult.">
+<meta property="og:title" content="Pomogochi · Pomodoro Rabbit">
+<meta property="og:description" content="Focus sessions feed and grow a pixel bunny on your desk. Open-source ESP8266 build.">
+<meta property="og:image" content="assets/stages.gif">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐰</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fff8ef; --ink:#2b2320; --soft:#6d5f58; --card:#ffffff;
+  --carrot:#ff7a3d; --leaf:#4caf6a; --sky:#6bb7ff; --pink:#ff9ec4; --line:#f0e2d2;
+  --screen:#10141c;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6}
+a{color:var(--carrot);font-weight:700}
+.pixel{font-family:"Press Start 2P",monospace;letter-spacing:.5px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+nav{position:sticky;top:0;z-index:10;background:rgba(255,248,239,.92);backdrop-filter:blur(6px);border-bottom:2px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+nav .logo{font-size:13px;text-decoration:none;color:var(--ink)}
+nav ul{display:flex;gap:18px;list-style:none;margin:0;padding:0}
+nav ul a{color:var(--soft);text-decoration:none;font-weight:700;font-size:15px}
+nav ul a:hover{color:var(--carrot)}
+@media(max-width:720px){nav ul{display:none}}
+
+.hero{padding:70px 0 50px}
+.hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
+@media(max-width:820px){.hero .wrap{grid-template-columns:1fr}}
+.tag{display:inline-block;background:#ffe7d8;color:#b4501f;font-weight:800;font-size:13px;padding:4px 12px;border-radius:99px;margin-bottom:16px}
+h1{font-size:30px;line-height:1.5;margin:0 0 18px}
+h1 span{color:var(--carrot)}
+.lead{font-size:19px;color:var(--soft);margin:0 0 28px}
+.btns{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-block;padding:13px 22px;border-radius:12px;text-decoration:none;font-weight:800;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);transition:transform .1s, box-shadow .1s}
+.btn:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
+.btn.primary{background:var(--carrot);color:#fff}
+.btn.ghost{background:#fff;color:var(--ink)}
+.meta{margin-top:22px;font-size:14px;color:var(--soft)}
+
+/* device mockup */
+.device{justify-self:center;background:#f4d9b8;border:4px solid var(--ink);border-radius:28px;padding:22px 22px 26px;box-shadow:8px 8px 0 var(--ink);width:260px}
+.screen{background:var(--screen);border-radius:8px;border:4px solid #3a3330;overflow:hidden;aspect-ratio:128/160;display:flex;flex-direction:column}
+.screen .bar{color:#ffd166;font-size:8px;padding:8px 8px 0;display:flex;justify-content:space-between}
+.screen img{width:100%;image-rendering:pixelated;flex:1;object-fit:contain;background:#fff}
+.screen .msg{color:#fff;font-size:8px;text-align:center;padding:8px}
+.keys{display:flex;justify-content:center;gap:16px;margin-top:18px}
+.keys div{text-align:center;font-size:9px}
+.keys i{display:block;width:34px;height:34px;border-radius:50%;border:3px solid var(--ink);margin:0 auto 6px;box-shadow:2px 2px 0 var(--ink)}
+.keys .m i{background:var(--sky)} .keys .o i{background:var(--leaf)} .keys .b i{background:var(--pink)}
+
+section{padding:60px 0}
+section.alt{background:#fff;border-top:2px solid var(--line);border-bottom:2px solid var(--line)}
+h2{font-size:18px;margin:0 0 10px}
+.sub{color:var(--soft);margin:0 0 34px;font-size:17px}
+
+.loop{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:820px){.loop{grid-template-columns:repeat(2,1fr)}}
+.step{background:var(--card);border:3px solid var(--ink);border-radius:16px;padding:20px;box-shadow:4px 4px 0 var(--ink)}
+.step .n{font-size:22px}
+.step h3{margin:8px 0 6px;font-size:17px}
+.step p{margin:0;color:var(--soft);font-size:15px}
+
+.gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+@media(max-width:820px){.gallery{grid-template-columns:repeat(2,1fr)}}
+figure{margin:0;background:#fff;border:3px solid var(--ink);border-radius:16px;overflow:hidden;box-shadow:4px 4px 0 var(--ink)}
+figure img{width:100%;display:block;image-rendering:pixelated;background:#fff}
+figcaption{padding:10px 12px;font-weight:800;font-size:14px;border-top:3px solid var(--ink);background:#fffaf4}
+
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:900px){.features{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.features{grid-template-columns:1fr}}
+.f{background:var(--bg);border:2px solid var(--line);border-radius:14px;padding:18px}
+.f b{display:block;font-size:16px;margin-bottom:4px}
+.f span{color:var(--soft);font-size:15px}
+.f .e{font-size:26px;display:block;margin-bottom:6px}
+
+table{width:100%;border-collapse:collapse;background:#fff;border:3px solid var(--ink);border-radius:14px;overflow:hidden;box-shadow:4px 4px 0 var(--ink);font-size:15px}
+th,td{text-align:left;padding:10px 14px;border-bottom:2px solid var(--line)}
+th{background:#ffe7d8}
+tr:last-child td{border-bottom:none}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start}
+@media(max-width:860px){.two{grid-template-columns:1fr}}
+.tablewrap{overflow-x:auto;padding:0 6px 8px 0}
+code{background:#fff1e4;padding:2px 6px;border-radius:6px;font-size:14px}
+
+.shop img{width:100%;border:3px solid var(--ink);border-radius:16px;box-shadow:4px 4px 0 var(--ink);image-rendering:pixelated;background:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.chip{background:#fff;border:2px solid var(--ink);border-radius:99px;padding:6px 14px;font-weight:700;font-size:14px}
+.chip em{font-style:normal;color:var(--carrot)}
+
+.wiring img{width:100%;border:3px solid var(--ink);border-radius:16px;box-shadow:4px 4px 0 var(--ink);background:#fff}
+.note{background:#fff3cd;border:2px solid #e9c46a;border-radius:12px;padding:12px 16px;margin-top:18px;font-size:15px}
+
+ol.setup{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;gap:14px}
+ol.setup li{counter-increment:s;background:#fff;border:3px solid var(--ink);border-radius:14px;padding:16px 18px 16px 64px;position:relative;box-shadow:3px 3px 0 var(--ink)}
+ol.setup li::before{content:counter(s);position:absolute;left:16px;top:14px;width:34px;height:34px;border-radius:10px;background:var(--leaf);color:#fff;font-family:"Press Start 2P";font-size:12px;display:flex;align-items:center;justify-content:center}
+pre{background:var(--screen);color:#d7f5d0;padding:16px;border-radius:12px;overflow-x:auto;font-size:14px}
+
+.cta{text-align:center}
+.cta .btns{justify-content:center}
+footer{padding:36px 0;text-align:center;color:var(--soft);font-size:14px;border-top:2px solid var(--line)}
+footer p{margin:6px 0}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="logo pixel" href="#">🐰 POMOGOCHI</a>
+    <ul>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#pet">The pet</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#build">Build it</a></li>
+      <li><a class="gh" href="#">GitHub</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div>
+      <span class="tag">Open-source · ESP8266 · v1.2</span>
+      <h1 class="pixel">Focus.<br>Feed the <span>bunny</span>.<br>Repeat.</h1>
+      <p class="lead">Pomodoro Rabbit is a desk timer with a virtual pet. Every focus session you finish feeds and grows your rabbit, from an egg to an adult. Skip work and it gets hungry and sad, but it never dies.</p>
+      <div class="btns">
+        <a class="btn primary gh" href="#">View on GitHub</a>
+        <a class="btn ghost" href="#build">Build your own</a>
+      </div>
+      <p class="meta">NodeMCU ESP8266 · 1.8" ST7735 TFT · 3 buttons · buzzer</p>
+    </div>
+    <div class="device" aria-label="Device mockup">
+      <div class="screen">
+        <div class="bar pixel"><span>⭐12</span><span>🥕3</span><span>🔥7</span></div>
+        <img src="assets/stages.gif" alt="The rabbit growing from egg to adult">
+        <div class="msg pixel">Keep Doing</div>
+      </div>
+      <div class="keys pixel">
+        <div class="m"><i></i>MODE</div>
+        <div class="o"><i></i>OK</div>
+        <div class="b"><i></i>BACK</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="how" class="alt">
+  <div class="wrap">
+    <h2 class="pixel">How it works</h2>
+    <p class="sub">Your to-do list and your pet share one loop.</p>
+    <div class="loop">
+      <div class="step"><div class="n">📝</div><h3>Pick a task</h3><p>Add up to 7 to-dos on the web page, then choose one on the device.</p></div>
+      <div class="step"><div class="n">⏳</div><h3>Focus</h3><p>25 or 50 minutes with an animated hourglass and a soft heartbeat sound.</p></div>
+      <div class="step"><div class="n">🥕</div><h3>Earn</h3><p>Carrots, Growth and Stars. 25 min = 1 carrot, 50 min = 2.</p></div>
+      <div class="step"><div class="n">🐰</div><h3>Care</h3><p>Feed, pet and play. Your rabbit grows: Egg, Baby, Kid, Teen, Adult.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="pet">
+  <div class="wrap">
+    <h2 class="pixel">Meet the rabbit</h2>
+    <p class="sub">Pixel art drawn 1-bit on a 128×160 screen. It hatches, plays, gets moody and sleeps at night.</p>
+    <div class="gallery">
+      <figure><img src="assets/hatch.gif" alt="Egg hatching" loading="lazy"><figcaption>🥚 Hatches on your first focus</figcaption></figure>
+      <figure><img src="assets/care.gif" alt="Feeding and petting" loading="lazy"><figcaption>🥕 Feed &amp; pet</figcaption></figure>
+      <figure><img src="assets/play.gif" alt="Playing with a ball" loading="lazy"><figcaption>⚽ Play</figcaption></figure>
+      <figure><img src="assets/moods.gif" alt="Moods" loading="lazy"><figcaption>💭 Moods</figcaption></figure>
+      <figure><img src="assets/stages.gif" alt="Growth stages" loading="lazy"><figcaption>📈 Five stages</figcaption></figure>
+      <figure><img src="assets/idle.gif" alt="Idle animation" loading="lazy"><figcaption>👀 Blinks &amp; ear twitch</figcaption></figure>
+      <figure><img src="assets/sleep.gif" alt="Sleeping" loading="lazy"><figcaption>💤 Sleeps 11 pm to 8 am</figcaption></figure>
+      <figure style="display:flex;flex-direction:column;justify-content:center;padding:18px;background:#ffe7d8"><div class="pixel" style="font-size:11px;line-height:2">Growth<br>Egg 0<br>Baby 1+<br>Kid 10+<br>Teen 40+<br>Adult 100+</div></figure>
+    </div>
+  </div>
+</section>
+
+<section class="alt shop">
+  <div class="wrap">
+    <h2 class="pixel">⭐ Rewards shop</h2>
+    <p class="sub">Earn Stars (25 min = 1, 50 min = 2, finished task +1, max 8 a day) and dress your rabbit from the web page.</p>
+    <img src="assets/shop.png" alt="Hats on every stage and four scenes" loading="lazy">
+    <div class="chips">
+      <span class="chip">🎀 Bow <em>5</em></span><span class="chip">🌸 Flower <em>8</em></span><span class="chip">🥳 Party hat <em>12</em></span>
+      <span class="chip">🧢 Cap <em>15</em></span><span class="chip">🎩 Top hat <em>25</em></span><span class="chip">👑 Crown <em>40 + 30-day streak</em></span>
+      <span class="chip">🌱 Grass <em>10</em></span><span class="chip">🌧️ Rain <em>15</em></span><span class="chip">✨ Stars <em>25</em></span><span class="chip">🪔 Festival lamps <em>40 + 100-day streak</em></span>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <h2 class="pixel">Features</h2>
+    <p class="sub">Everything runs on the ESP8266 itself. No cloud, no app required.</p>
+    <div class="features">
+      <div class="f"><span class="e">⏱️</span><b>Pomodoro presets</b><span>25 → 5 break, 50 → 10 break, every 4th gets a 15 min long break. Quick 10 min focus too.</span></div>
+      <div class="f"><span class="e">🔔</span><b>Soothing sounds</b><span>Start bell, 264 Hz heartbeat loop during focus, and a gentle done chime. Hold MODE to mute.</span></div>
+      <div class="f"><span class="e">✅</span><b>To-do linked focus</b><span>Focus on a task, then answer "Task done?". Unfinished tasks carry over to tomorrow.</span></div>
+      <div class="f"><span class="e">🔥</span><b>Streaks &amp; shields</b><span>Daily streak, best streak, a shield every 7 days, milestones at 3, 7, 30 and 100.</span></div>
+      <div class="f"><span class="e">🌐</span><b>Built-in web page</b><span>Open <code>pomodoro.local</code> for to-dos, stats, history, shop, settings and backups.</span></div>
+      <div class="f"><span class="e">📊</span><b>Weekly report</b><span>Sun–Sat focus bars, best day, best task and care counts, built in your browser.</span></div>
+      <div class="f"><span class="e">🕗</span><b>Knows the time</b><span>Good morning at 8, lunch at 1, yawns at 10 pm, sleeps at night. NTP time with an offline fallback.</span></div>
+      <div class="f"><span class="e">📱</span><b>Phone alerts</b><span>Free ntfy notifications: break over, hungry rabbit, evening summary.</span></div>
+      <div class="f"><span class="e">🔋</span><b>Power-cut safe</b><span>Two checksummed save slots, and a running focus resumes after a reset or power cut.</span></div>
+      <div class="f"><span class="e">🪔</span><b>Festival day</b><span>Mark a holiday and the rabbit skips all penalties that day.</span></div>
+      <div class="f"><span class="e">📶</span><b>Easy Wi-Fi setup</b><span>A <code>Pomodoro-Setup</code> hotspot with a captive portal. No passwords in code.</span></div>
+      <div class="f"><span class="e">😴</span><b>Idle sleep</b><span>After an hour idle the backlight dims and Wi-Fi switches off. Any button wakes it.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="build" class="alt">
+  <div class="wrap">
+    <h2 class="pixel">Build your own</h2>
+    <p class="sub">A breadboard weekend project. No soldering skills needed to start.</p>
+    <div class="two">
+      <div class="tablewrap">
+        <table>
+          <tr><th>Part</th><th>Notes</th></tr>
+          <tr><td>ESP8266 NodeMCU</td><td>v2/v3, 4 MB flash</td></tr>
+          <tr><td>1.8" ST7735 TFT</td><td>128×160, black tab</td></tr>
+          <tr><td>Passive buzzer</td><td>via BC547 + 1 kΩ + 1N4148</td></tr>
+          <tr><td>3 push buttons</td><td>MODE, OK, BACK</td></tr>
+          <tr><td>10 kΩ resistor</td><td>pull-up for BACK (D0)</td></tr>
+          <tr><td>USB cable</td><td>power</td></tr>
+        </table>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <tr><th>Signal</th><th>Pin</th></tr>
+          <tr><td>TFT CS / DC</td><td>D8 / D3</td></tr>
+          <tr><td>TFT SDA / SCK</td><td>D7 / D5</td></tr>
+          <tr><td>TFT LED / RST</td><td>D4 / RST</td></tr>
+          <tr><td>TFT VCC</td><td>3V3</td></tr>
+          <tr><td>Buzzer</td><td>D6 → BC547</td></tr>
+          <tr><td>MODE / OK / BACK</td><td>D1 / D2 / D0 → GND</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="wiring" style="margin-top:30px"><img src="assets/wiring.png" alt="Wiring diagram" loading="lazy"></div>
+    <p class="note">⚠️ Don't short TFT VCC to LED, and give BACK (D0) an external 10 kΩ pull-up to 3V3.</p>
+
+    <h2 class="pixel" style="margin-top:50px">Flash it</h2>
+    <p class="sub">Arduino IDE, about 10 minutes.</p>
+    <ol class="setup">
+      <li>Install the Arduino IDE and add the ESP8266 boards URL: <code>https://arduino.esp8266.com/stable/package_esp8266com_index.json</code></li>
+      <li>Boards Manager → install <b>esp8266 by ESP8266 Community</b> (tested with 3.1.2).</li>
+      <li>Library Manager → install <b>Adafruit GFX</b> and <b>Adafruit ST7735 and ST7789</b>.</li>
+      <li>Open <code>pomodoro_rabbit_v2/pomodoro_rabbit_v2.ino</code>. Board: <b>NodeMCU 1.0 (ESP-12E)</b>, Flash: <b>4MB (FS:2MB)</b>, Erase: <b>Only Sketch</b>.</li>
+      <li>Upload. Join the <code>Pomodoro-Setup</code> hotspot from your phone, pick your Wi-Fi, done.</li>
+    </ol>
+    <pre>arduino-cli compile -b esp8266:esp8266:nodemcuv2:eesz=4M2M pomodoro_rabbit_v2</pre>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="wrap">
+    <h2 class="pixel">Grab the code</h2>
+    <p class="sub">Firmware, art generators, wiring and step-by-step build sketches, all MIT licensed.</p>
+    <div class="btns">
+      <a class="btn primary gh" href="#">⭐ Star on GitHub</a>
+      <a class="btn ghost gh-docs" href="#">Read the setup guide</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>Made by <b>Teja Manepalli</b> 🇮🇳</p>
+    <p>Rabbit art from <a href="https://github.com/limengdu/reTerminal_Sticky_Bunny">limengdu/reTerminal_Sticky_Bunny</a> (MIT). Code MIT.</p>
+  </div>
+</footer>
+
+<script>
+// ✏️ Set your GitHub repo link here, once:
+const REPO = "https://github.com/YOUR-USERNAME/Pomogochi";
+document.querySelectorAll(".gh").forEach(a => a.href = REPO);
+document.querySelectorAll(".gh-docs").forEach(a => a.href = REPO + "/blob/main/docs/setup.md");
+</script>
+</body>
+</html>
