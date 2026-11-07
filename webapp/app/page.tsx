@@ -1,35 +1,63 @@
-import Link from "next/link";
+import Nav from "@/components/Nav";
+import { loadMe, loadDays } from "@/lib/data";
+import { deleteDay } from "@/app/actions";
+import { todayIST } from "@/lib/sheet";
 
-export const metadata = { title: "Privacy Policy · Pomogochi" };
+function shift(d: string, n: number) {
+  const t = new Date(d + "T00:00:00Z");
+  t.setUTCDate(t.getUTCDate() + n);
+  return t.toISOString().slice(0, 10);
+}
 
-export default function Privacy() {
+export default async function History() {
+  const { supabase, user } = await loadMe();
+  const days = await loadDays(supabase, user.id);
+  const by = new Map(days.map((d) => [d.date, d]));
+  const today = todayIST();
+
+  // last 5 weeks, Sunday-first, ending this week
+  const dow = new Date(today + "T00:00:00Z").getUTCDay();
+  const start = shift(today, -dow - 28);
+  const cells = Array.from({ length: 35 }, (_, i) => shift(start, i));
+
   return (
-    <main className="page narrow legal">
-      <p><Link href="/">← Pomogochi</Link></p>
-      <h1>Privacy Policy</h1>
-      <p className="hint">Last updated: 7 November 2026</p>
+    <>
+      <Nav active="history" />
+      <main className="page">
+        <h1>History</h1>
+        <div className="card">
+          <div className="cal">
+            {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+              <div key={i} className="dh">{d}</div>
+            ))}
+            {cells.map((d) => {
+              const g = by.get(d)?.growth ?? 0;
+              const lvl = d > today ? "future" : g === 0 ? (by.has(d) ? "l0 up" : "l0") : g < 3 ? "l1" : g < 6 ? "l2" : "l3";
+              return (
+                <div key={d} className={`dc ${lvl}`} title={by.has(d) ? `${d}: +${g}` : d}>
+                  {Number(d.slice(8))}
+                </div>
+              );
+            })}
+          </div>
+          <p className="hint center">Darker = more growth that day</p>
+        </div>
 
-      <p>Pomogochi is a free hobby app made by Teja Manepalli. It lets you grow a virtual pet from the day sheets your Pomodoro Rabbit timer creates. This page explains what it keeps and why.</p>
-
-      <h2>What we collect</h2>
-      <ul>
-        <li><b>Your Google account basics:</b> your email address, name and profile picture, which Google shares when you sign in. We only use them to know it&apos;s you.</li>
-        <li><b>Your pet:</b> the animal you picked and the name you gave it.</li>
-        <li><b>Day sheets you upload:</b> the date, focus sessions, minutes, streak and the tasks you marked done.</li>
-      </ul>
-      <p>We don&apos;t read your Gmail, contacts, Drive or anything else in your Google account. We don&apos;t use ads, trackers or analytics.</p>
-
-      <h2>How it&apos;s used</h2>
-      <p>Only to show your pet, its growth and your history to you. Nothing is sold or shared with anyone.</p>
-
-      <h2>Where it&apos;s stored</h2>
-      <p>Data is stored in a Supabase database (Mumbai region) and the app is hosted on Vercel. Row-level security means each account can only see its own data.</p>
-
-      <h2>Deleting your data</h2>
-      <p>Open <b>Pet → Start over → Delete everything</b> to erase your pet and every uploaded day straight away. To remove your account completely, email us and it will be deleted within 7 days.</p>
-
-      <h2>Contact</h2>
-      <p>manepalliteja37@gmail.com</p>
-    </main>
+        <div className="card list">
+          {days.length === 0 && <p className="hint center">No days uploaded yet.</p>}
+          {days.slice(0, 60).map((d) => (
+            <div key={d.date} className="rowi">
+              <b>{d.date}</b>
+              <span>🍅25×{d.s25} · 🍅50×{d.s50} · ✅{d.done_count} · {d.minutes} min</span>
+              <em>+{d.growth}</em>
+              <form action={deleteDay}>
+                <input type="hidden" name="date" value={d.date} />
+                <button className="x" title="Remove this day">🗑</button>
+              </form>
+            </div>
+          ))}
+        </div>
+      </main>
+    </>
   );
 }
