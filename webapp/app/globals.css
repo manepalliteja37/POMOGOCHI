@@ -115,3 +115,8 @@ code{background:var(--cream);padding:1px 6px;border-radius:6px}
 .account{display:flex;flex-direction:column;gap:12px;margin-top:26px}
 .account p{margin:0}
 details summary{cursor:pointer;color:var(--soft);font-weight:800}
+/* privacy + terms */
+.legal h2{font-size:20px;margin:24px 0 8px}
+.legal ul{padding-left:20px}
+.legal li{margin:6px 0}
+.legal-links{margin-top:32px}
