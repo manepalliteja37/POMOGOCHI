@@ -1,63 +1,38 @@
-import Nav from "@/components/Nav";
-import { loadMe, loadDays } from "@/lib/data";
-import { deleteDay } from "@/app/actions";
-import { todayIST } from "@/lib/sheet";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import SignIn from "@/components/SignIn";
 
-function shift(d: string, n: number) {
-  const t = new Date(d + "T00:00:00Z");
-  t.setUTCDate(t.getUTCDate() + n);
-  return t.toISOString().slice(0, 10);
-}
-
-export default async function History() {
-  const { supabase, user } = await loadMe();
-  const days = await loadDays(supabase, user.id);
-  const by = new Map(days.map((d) => [d.date, d]));
-  const today = todayIST();
-
-  // last 5 weeks, Sunday-first, ending this week
-  const dow = new Date(today + "T00:00:00Z").getUTCDay();
-  const start = shift(today, -dow - 28);
-  const cells = Array.from({ length: 35 }, (_, i) => shift(start, i));
+export default async function Landing({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) redirect("/home");
+  const { error } = await searchParams;
 
   return (
-    <>
-      <Nav active="history" />
-      <main className="page">
-        <h1>History</h1>
-        <div className="card">
-          <div className="cal">
-            {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-              <div key={i} className="dh">{d}</div>
-            ))}
-            {cells.map((d) => {
-              const g = by.get(d)?.growth ?? 0;
-              const lvl = d > today ? "future" : g === 0 ? (by.has(d) ? "l0 up" : "l0") : g < 3 ? "l1" : g < 6 ? "l2" : "l3";
-              return (
-                <div key={d} className={`dc ${lvl}`} title={by.has(d) ? `${d}: +${g}` : d}>
-                  {Number(d.slice(8))}
-                </div>
-              );
-            })}
-          </div>
-          <p className="hint center">Darker = more growth that day</p>
-        </div>
-
-        <div className="card list">
-          {days.length === 0 && <p className="hint center">No days uploaded yet.</p>}
-          {days.slice(0, 60).map((d) => (
-            <div key={d.date} className="rowi">
-              <b>{d.date}</b>
-              <span>🍅25×{d.s25} · 🍅50×{d.s50} · ✅{d.done_count} · {d.minutes} min</span>
-              <em>+{d.growth}</em>
-              <form action={deleteDay}>
-                <input type="hidden" name="date" value={d.date} />
-                <button className="x" title="Remove this day">🗑</button>
-              </form>
-            </div>
-          ))}
-        </div>
-      </main>
-    </>
+    <main className="landing">
+      <div className="row4">
+        <img src="/pets/dog_3d.png" alt="" className="pet breathe" style={{ animationDelay: "0s" }} />
+        <img src="/pets/rabbit_3d.png" alt="" className="pet breathe" style={{ animationDelay: ".4s" }} />
+        <img src="/pets/parrot_3d.png" alt="" className="pet breathe" style={{ animationDelay: ".8s" }} />
+        <img src="/pets/sunflower_3d.png" alt="" className="pet breathe" style={{ animationDelay: "1.2s" }} />
+      </div>
+      <h1>Pomogochi</h1>
+      <p className="lead">
+        Your <b>Pomodoro Rabbit</b> tracks every focus. Upload its day sheets here and grow a
+        dog, rabbit, parrot or plant from your real work.
+      </p>
+      <SignIn />
+      {error && <p className="err">Sign-in didn&apos;t finish. Please try again.</p>}
+      <div className="how">
+        <div><b>1</b> Focus on the device</div>
+        <div><b>2</b> Web page → History → JSON</div>
+        <div><b>3</b> Upload it here</div>
+        <div><b>4</b> Watch your pet grow</div>
+      </div>
+      <p className="hint legal-links">
+        <Link href="/privacy">Privacy Policy</Link> · <Link href="/terms">Terms of Service</Link>
+      </p>
+    </main>
   );
 }
